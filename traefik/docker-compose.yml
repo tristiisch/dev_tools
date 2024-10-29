@@ -1,0 +1,48 @@
+services:
+  traefik:
+    image: traefik:3
+    command:
+      - --log
+      - --log.level=INFO
+      - --accesslog
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.network=traefik-local
+      - --providers.docker.exposedbydefault=false
+      - --entryPoints.web.address=:80
+      - --entrypoints.web.asdefault=true
+      - --entryPoints.websecure.address=:443
+      - --providers.file.filename=/etc/traefik/tls.yml
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    networks:
+      - traefik-local
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./tls.yml:/etc/traefik/tls.yml
+      - ./certs:/certs
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.rule=Host(`traefik.local`)
+      - traefik.http.routers.traefik.entrypoints=web
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik-https.rule=Host(`traefik.local`)
+      - traefik.http.routers.traefik-https.entrypoints=websecure
+      - traefik.http.routers.traefik-https.tls=true
+
+  whoami:
+    image: traefik/whoami
+    networks:
+      - traefik-local
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.whoami.rule=Host(`whoami.local`)
+      - traefik.http.routers.whoami-secure.rule=Host(`whoami.local`)
+      - traefik.http.routers.whoami-secure.entrypoints=websecure
+      - traefik.http.routers.whoami-secure.tls=true
+
+networks:
+  traefik-local:
+    external: true
