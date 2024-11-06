@@ -16,7 +16,6 @@ services:
     ports:
       - 80:80
       - 443:443
-      - 8080:8080
     networks:
       - traefik-local
     volumes:
@@ -31,6 +30,7 @@ services:
       - traefik.http.routers.traefik-https.rule=Host(`traefik.local`)
       - traefik.http.routers.traefik-https.entrypoints=websecure
       - traefik.http.routers.traefik-https.tls=true
+    restart: unless-stopped
 
   whoami:
     image: traefik/whoami
@@ -42,6 +42,7 @@ services:
       - traefik.http.routers.whoami-secure.rule=Host(`whoami.local`)
       - traefik.http.routers.whoami-secure.entrypoints=websecure
       - traefik.http.routers.whoami-secure.tls=true
+    restart: unless-stopped
 
 networks:
   traefik-local:
