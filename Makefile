@@ -1,5 +1,5 @@
 scripts:
-	@./main.sh add_symlinks
+	@./main.sh add
 	@./main.sh set_permissions
 
 traefik:
