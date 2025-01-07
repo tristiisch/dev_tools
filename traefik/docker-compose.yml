@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:3
+    image: traefik:v3
     command:
       - --log
       - --log.level=INFO
@@ -13,6 +13,7 @@ services:
       - --entrypoints.web.asdefault=true
       - --entryPoints.websecure.address=:443
       - --providers.file.filename=/etc/traefik/tls.yml
+      - --serversTransport.insecureSkipVerify=true
     ports:
       - 80:80
       - 443:443
@@ -30,7 +31,7 @@ services:
       - traefik.http.routers.traefik-https.rule=Host(`traefik.local`)
       - traefik.http.routers.traefik-https.entrypoints=websecure
       - traefik.http.routers.traefik-https.tls=true
-    restart: unless-stopped
+    restart: always
 
   whoami:
     image: traefik/whoami
@@ -42,7 +43,7 @@ services:
       - traefik.http.routers.whoami-secure.rule=Host(`whoami.local`)
       - traefik.http.routers.whoami-secure.entrypoints=websecure
       - traefik.http.routers.whoami-secure.tls=true
-    restart: unless-stopped
+    restart: always
 
 networks:
   traefik-local:
