@@ -1,0 +1,103 @@
+################################################################
+# Global configuration
+################################################################
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+################################################################
+# EntryPoints configuration
+################################################################
+
+entryPoints:
+  web:
+    address: :80
+    asdefault: true
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: false
+  websecure:
+    address: :443
+    asdefault: true
+    http:
+      tls:
+        certResolver: stepca
+
+  metrics:
+    address: :9103
+  traefik:
+    address: :8080
+
+################################################################
+# Traefik logs configuration
+################################################################
+
+log:
+  level: DEBUG
+  format: common
+
+################################################################
+# Access logs configuration
+################################################################
+
+accessLog:
+  format: common
+
+################################################################
+# API and dashboard configuration
+################################################################
+
+api:
+  dashboard: true
+  insecure: true
+
+################################################################
+# Ping configuration
+################################################################
+
+# Enable ping
+#ping:
+  # Name of the related entry point
+  #
+  # Optional
+  # Default: "traefik"
+  #
+#  entryPoint: traefik
+
+################################################################
+# Docker configuration backend
+################################################################
+
+providers:
+  docker:
+   endpoint: "unix:///var/run/docker.sock"
+   defaultRule: Host(`{{ normalize .Name }}.internal`)
+   exposedByDefault: false
+   network: traefik-local
+
+################################################################
+# Metrics configuration
+################################################################
+
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+
+certificatesResolvers:
+  stepca:
+    acme:
+      email: tristan.glory@sgs.com
+      storage: "acme.json"
+      caServer: "https://step_ca:9000/acme/acme/directory"
+      caCertificates:
+        - /opt/step_ca/certs/root_ca.crt
+      certificatesDuration: 30
+      keyType: "EC256"
+      tlsChallenge: true
+      httpChallenge:
+        entryPoint: web

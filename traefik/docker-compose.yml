@@ -1,50 +1,80 @@
 services:
-  traefik:
+  proxy:
     image: traefik:v3
     command:
-      - --log
-      - --log.level=INFO
-      - --accesslog
-      - --api.insecure=true
-      - --providers.docker=true
-      - --providers.docker.network=traefik-local
-      - --providers.docker.exposedbydefault=false
-      - --entryPoints.web.address=:80
-      - --entrypoints.web.asdefault=true
-      - --entryPoints.websecure.address=:443
-      - --providers.file.filename=/etc/traefik/tls.yml
-      - --serversTransport.insecureSkipVerify=true
+      - --configfile=/opt/traefik.yml
     ports:
       - 80:80
       - 443:443
     networks:
-      - traefik-local
+      traefik-local:
+      step_ca:
+        aliases:
+          - "proxy"
+          - "traefik.localhost"
+          - "whoami.localhost"
+          - "pilote.localhost"
+          - "encore.pilote.localhost"
+          - "pilote-api.localhost"
+          - "sir.localhost"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./tls.yml:/etc/traefik/tls.yml
-      - ./certs:/certs
+      - ./certificates:/opt/step_ca
+    configs:
+     - source: treafik_config
+       target: /opt/traefik.yml
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.rule=Host(`traefik.local`)
-      - traefik.http.routers.traefik.entrypoints=web
-      - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik-https.rule=Host(`traefik.local`)
-      - traefik.http.routers.traefik-https.entrypoints=websecure
-      - traefik.http.routers.traefik-https.tls=true
-    restart: always
+      traefik.enable: "true"
+      traefik.http.routers.traefik.rule: "Host(`traefik.localhost`)"
+      traefik.http.services.traefik.loadbalancer.server.port: 80
+      traefik.http.routers.traefik.service: "api@internal"
+      traefik.http.routers.traefik-secure.rule: "Host(`traefik.localhost`)"
+      traefik.http.routers.traefik-secure.entrypoints: "websecure"
+      traefik.http.routers.traefik-secure.service: "api@internal"
+    deploy:
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: any
 
   whoami:
     image: traefik/whoami
     networks:
       - traefik-local
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.whoami.rule=Host(`whoami.local`)
-      - traefik.http.routers.whoami-secure.rule=Host(`whoami.local`)
-      - traefik.http.routers.whoami-secure.entrypoints=websecure
-      - traefik.http.routers.whoami-secure.tls=true
-    restart: always
+      traefik.enable: "true"
+      traefik.http.routers.whoami.rule: "Host(`whoami.localhost`)"
+      traefik.http.services.whoami.loadbalancer.server.port: 80
+      traefik.http.routers.whoami-secure.rule: "Host(`whoami.localhost`)"
+      traefik.http.routers.whoami-secure.entrypoints: "websecure"
+    deploy:
+      restart_policy:
+        condition: any
+
+  step_ca:
+    image: smallstep/step-ca:latest
+    volumes:
+      - ./certificates:/home/step
+    environment:
+      DOCKER_STEPCA_INIT_NAME: Docker Local
+      DOCKER_STEPCA_INIT_DNS_NAMES: localhost,local,step_ca
+      DOCKER_STEPCA_INIT_REMOTE_MANAGEMENT: "true"
+      DOCKER_STEPCA_INIT_ACME : "true"
+    networks:
+      - step_ca
+    ports:
+      - 9001:9000
+    healthcheck:
+      disable: true
+    deploy:
+      restart_policy:
+        condition: any
+
+configs:
+  treafik_config:
+    file: ./config.yml
 
 networks:
   traefik-local:
     external: true
+  step_ca:

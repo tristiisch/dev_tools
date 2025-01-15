@@ -1,2 +1,4 @@
 *.cert
 *.key
+traefik/certificates/*
+!traefik/certificates/.gitkeep
