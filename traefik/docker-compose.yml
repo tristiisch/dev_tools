@@ -17,6 +17,8 @@ services:
           - "encore.pilote.localhost"
           - "pilote-api.localhost"
           - "sir.localhost"
+          - "grafana.localhost"
+          - "loki.localhost"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certificates:/opt/step_ca
